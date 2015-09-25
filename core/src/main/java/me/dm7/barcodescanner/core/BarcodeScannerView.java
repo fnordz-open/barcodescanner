@@ -30,17 +30,20 @@ public abstract class BarcodeScannerView extends FrameLayout implements Camera.P
         mPreview = new CameraPreview(getContext());
         RelativeLayout relativeLayout = new RelativeLayout(getContext());
         relativeLayout.setGravity(Gravity.CENTER);
-        relativeLayout.setBackgroundColor(Color.BLACK);
+        relativeLayout.setBackgroundColor(Color.TRANSPARENT);
         relativeLayout.addView(mPreview);
         addView(relativeLayout);
 
-        mViewFinderView = createViewFinderView(getContext());
+
+        mViewFinderView = createViewFinderView(getContext(),mPreview.getOptimalPreviewSize());
+
         if (mViewFinderView instanceof View) {
             addView((View) mViewFinderView);
         } else {
             throw new IllegalArgumentException("IViewFinder object returned by " +
                     "'createViewFinderView()' should be instance of android.view.View");
         }
+
     }
 
     /**
@@ -50,8 +53,12 @@ public abstract class BarcodeScannerView extends FrameLayout implements Camera.P
      * @param context {@link Context}
      * @return {@link android.view.View} that implements {@link ViewFinderView}
      */
-    protected IViewFinder createViewFinderView(Context context) {
+    protected ViewFinderView createViewFinderView(Context context) {
         return new ViewFinderView(context);
+    }
+
+    protected ViewFinderView createViewFinderView(Context context,Camera.Size optimalSize) {
+        return new ViewFinderView(context,optimalSize);
     }
 
     public void startCamera(int cameraId) {
@@ -64,6 +71,9 @@ public abstract class BarcodeScannerView extends FrameLayout implements Camera.P
             mViewFinderView.setupViewFinder();
             mPreview.setCamera(mCamera, this);
             mPreview.initCameraPreview();
+
+            ((ViewFinderView)mViewFinderView).setOptimalSize(mPreview.getOptimalPreviewSize());
+
         }
     }
 
