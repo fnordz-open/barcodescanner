@@ -132,7 +132,7 @@ public class ViewFinderView extends View implements IViewFinder {
         int width = canvas.getWidth();
         int height = canvas.getHeight();
 
-        if (optimalSize == null) {
+        if (optimalSize != null && false) {
 
             int leftOfSet = (width - optimalSize.width);
 
