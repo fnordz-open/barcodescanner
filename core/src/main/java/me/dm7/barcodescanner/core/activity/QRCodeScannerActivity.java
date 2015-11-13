@@ -1,8 +1,11 @@
 package me.dm7.barcodescanner.core.activity;
 
+import android.Manifest;
 import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.net.Uri;
 import android.os.Bundle;
+import android.support.v4.app.ActivityCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.text.TextUtils;
@@ -25,6 +28,8 @@ import zxing.ZXingScannerView;
  */
 public class QRCodeScannerActivity extends AppCompatActivity implements ZXingScannerView.ResultHandler {
 
+    private static final int REQUEST_CAMERA_PERMISSION = 123;
+
     public static final String MESSAGE_INFO = "messageinfo";
     public static final String SKIP_TITLE = "skiptitle";
     public static final String MESSAGE = "message";
@@ -42,10 +47,11 @@ public class QRCodeScannerActivity extends AppCompatActivity implements ZXingSca
     private int mCameraId = -1;
 
 
-    public static final int GET_MESSAGE = 1;
-    public static final int SKIP_QRCODE = 2;
-    public static final int BACK_PRESSED = 3;
+    public static final int RESULT_GET_MESSAGE = 1;
+    public static final int RESULT_SKIP_QRCODE = 2;
+    public static final int RESULT_PERMISSION_DENIED = 3;
 
+    private boolean isPermissionRequested = false;
 
     String message;
     String skip_title = "";
@@ -55,49 +61,13 @@ public class QRCodeScannerActivity extends AppCompatActivity implements ZXingSca
     @Override
     protected void onCreate(Bundle state) {
         super.onCreate(state);
-        setContentView(R.layout.activity_qrcode_preview);
-
-        toolbar = (Toolbar) findViewById(R.id.toolbar);
-        toolbar.getBackground().setAlpha(0);
-
-        setSupportActionBar(toolbar);
-        getSupportActionBar().setDisplayHomeAsUpEnabled(true);
-        getSupportActionBar().setDisplayShowHomeEnabled(true);
-
-
-        if (state != null) {
-            mFlash = state.getBoolean(FLASH_STATE, false);
-            mAutoFocus = state.getBoolean(AUTO_FOCUS_STATE, true);
-            mSelectedIndices = state.getIntegerArrayList(SELECTED_FORMATS);
-            mCameraId = state.getInt(CAMERA_ID, -1);
+        setResult(RESULT_CANCELED);
+        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED) {
+            initViews(state);
         } else {
-            mFlash = false;
-            mAutoFocus = true;
-            mSelectedIndices = null;
-            mCameraId = -1;
+            isPermissionRequested = true;
+            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.CAMERA}, REQUEST_CAMERA_PERMISSION);
         }
-
-
-        mScannerView = (ZXingScannerView) findViewById(R.id.scanner_view);
-        setupFormats();
-
-        messageInfo = (TextView) findViewById(R.id.message_info);
-
-
-        Bundle b = getIntent().getExtras() == null ? new Bundle() : getIntent().getExtras();
-
-        if (b.containsKey(MESSAGE_INFO)) {
-            message = getIntent().getExtras().getString(MESSAGE_INFO);
-            messageInfo.setText(message);
-        } else {
-            messageInfo.setVisibility(View.GONE);
-        }
-
-        if (b.containsKey(SKIP_TITLE)) {
-            skip_title = getIntent().getExtras().getString(SKIP_TITLE);
-        }
-
-
     }
 
     @Override
@@ -118,7 +88,7 @@ public class QRCodeScannerActivity extends AppCompatActivity implements ZXingSca
 
 
         if (item.getItemId() == R.id.fora_de_sala) {
-            setResult(SKIP_QRCODE);
+            setResult(RESULT_SKIP_QRCODE);
             finish();
             return true;
         } else if (item.getItemId() == android.R.id.home) {
@@ -128,13 +98,73 @@ public class QRCodeScannerActivity extends AppCompatActivity implements ZXingSca
 
 
         return super.onOptionsItemSelected(item);
-
     }
 
     @Override
     protected void onResume() {
         super.onResume();
+        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED) {
+            initCamera();
+        } else if (!isPermissionRequested) {
+            recreate();
+        }
+    }
 
+    @Override
+    public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
+        isPermissionRequested = false;
+        if (requestCode == REQUEST_CAMERA_PERMISSION
+                && grantResults.length == 1
+                && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+            initViews(null);
+            initCamera();
+        } else {
+            setResult(RESULT_PERMISSION_DENIED);
+            finish();
+        }
+    }
+
+    private void initViews(Bundle state) {
+        setContentView(R.layout.activity_qrcode_preview);
+
+        toolbar = (Toolbar) findViewById(R.id.toolbar);
+        toolbar.getBackground().setAlpha(0);
+
+        setSupportActionBar(toolbar);
+        getSupportActionBar().setDisplayHomeAsUpEnabled(true);
+        getSupportActionBar().setDisplayShowHomeEnabled(true);
+
+        messageInfo = (TextView) findViewById(R.id.message_info);
+        Bundle b = getIntent().getExtras() == null ? new Bundle() : getIntent().getExtras();
+
+        if (b.containsKey(MESSAGE_INFO)) {
+            message = getIntent().getExtras().getString(MESSAGE_INFO);
+            messageInfo.setText(message);
+        } else {
+            messageInfo.setVisibility(View.GONE);
+        }
+
+        if (b.containsKey(SKIP_TITLE)) {
+            skip_title = getIntent().getExtras().getString(SKIP_TITLE);
+        }
+
+        mScannerView = (ZXingScannerView) findViewById(R.id.scanner_view);
+        setupFormats();
+
+        if (state != null) {
+            mFlash = state.getBoolean(FLASH_STATE, false);
+            mAutoFocus = state.getBoolean(AUTO_FOCUS_STATE, true);
+            mSelectedIndices = state.getIntegerArrayList(SELECTED_FORMATS);
+            mCameraId = state.getInt(CAMERA_ID, -1);
+        } else {
+            mFlash = false;
+            mAutoFocus = true;
+            mSelectedIndices = null;
+            mCameraId = -1;
+        }
+    }
+
+    private void initCamera() {
         mScannerView.startCamera(-1);
         mScannerView.setAutoFocus(mAutoFocus);
         mScannerView.setFlash(mFlash);
@@ -147,7 +177,7 @@ public class QRCodeScannerActivity extends AppCompatActivity implements ZXingSca
         Intent i = new Intent();
         i.setData(Uri.parse(rawResult.getText()));
 
-        setResult(GET_MESSAGE, i);
+        setResult(RESULT_GET_MESSAGE, i);
 
         finish();
 
@@ -174,12 +204,13 @@ public class QRCodeScannerActivity extends AppCompatActivity implements ZXingSca
     protected void onPause() {
         super.onPause();
 
-        mScannerView.stopCamera();
+        if (mScannerView != null) {
+            mScannerView.stopCamera();
+        }
     }
 
     @Override
     public void onBackPressed() {
-        setResult(BACK_PRESSED);
         finish();
     }
 }
