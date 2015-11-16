@@ -30,6 +30,8 @@ public class QRCodeScannerActivity extends AppCompatActivity implements ZXingSca
 
     private static final int REQUEST_CAMERA_PERMISSION = 123;
 
+    public static final String EXTRA_RAW_TEXT = "extra_raw_text";
+
     public static final String MESSAGE_INFO = "messageinfo";
     public static final String SKIP_TITLE = "skiptitle";
     public static final String MESSAGE = "message";
@@ -164,6 +166,15 @@ public class QRCodeScannerActivity extends AppCompatActivity implements ZXingSca
         }
     }
 
+    @Override
+    protected void onSaveInstanceState(Bundle outState) {
+        outState.putBoolean(FLASH_STATE, mFlash);
+        outState.putBoolean(AUTO_FOCUS_STATE, mAutoFocus);
+        outState.putIntegerArrayList(SELECTED_FORMATS, mSelectedIndices);
+        outState.putInt(CAMERA_ID, mCameraId);
+        super.onSaveInstanceState(outState);
+    }
+
     private void initCamera() {
         mScannerView.startCamera(-1);
         mScannerView.setAutoFocus(mAutoFocus);
@@ -172,15 +183,16 @@ public class QRCodeScannerActivity extends AppCompatActivity implements ZXingSca
     }
 
     @Override
-    public void handleResult(Result rawResult) {
+    public boolean handleResult(Result rawResult) {
 
         Intent i = new Intent();
         i.setData(Uri.parse(rawResult.getText()));
-
+        i.putExtra(EXTRA_RAW_TEXT, rawResult.getText());
         setResult(RESULT_GET_MESSAGE, i);
 
         finish();
 
+        return true;
     }
 
     public void setupFormats() {

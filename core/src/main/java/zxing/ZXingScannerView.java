@@ -4,6 +4,7 @@ import android.content.Context;
 import android.content.res.Configuration;
 import android.graphics.Rect;
 import android.hardware.Camera;
+import android.os.Handler;
 import android.util.AttributeSet;
 
 import com.google.zxing.BarcodeFormat;
@@ -27,7 +28,7 @@ import me.dm7.barcodescanner.core.DisplayUtils;
 
 public class ZXingScannerView extends BarcodeScannerView {
     public interface ResultHandler {
-        public void handleResult(Result rawResult);
+        boolean handleResult(Result rawResult);
     }
 
     private MultiFormatReader mMultiFormatReader;
@@ -71,27 +72,27 @@ public class ZXingScannerView extends BarcodeScannerView {
     }
 
     public Collection<BarcodeFormat> getFormats() {
-        if(mFormats == null) {
+        if (mFormats == null) {
             return ALL_FORMATS;
         }
         return mFormats;
     }
 
     private void initMultiFormatReader() {
-        Map<DecodeHintType,Object> hints = new EnumMap<DecodeHintType,Object>(DecodeHintType.class);
+        Map<DecodeHintType, Object> hints = new EnumMap<DecodeHintType, Object>(DecodeHintType.class);
         hints.put(DecodeHintType.POSSIBLE_FORMATS, getFormats());
         mMultiFormatReader = new MultiFormatReader();
         mMultiFormatReader.setHints(hints);
     }
 
     @Override
-    public void onPreviewFrame(byte[] data, Camera camera) {
+    public void onPreviewFrame(byte[] data, final Camera camera) {
         Camera.Parameters parameters = camera.getParameters();
         Camera.Size size = parameters.getPreviewSize();
         int width = size.width;
         int height = size.height;
 
-        if(DisplayUtils.getScreenOrientation(getContext()) == Configuration.ORIENTATION_PORTRAIT) {
+        if (DisplayUtils.getScreenOrientation(getContext()) == Configuration.ORIENTATION_PORTRAIT) {
             byte[] rotatedData = new byte[data.length];
             for (int y = 0; y < height; y++) {
                 for (int x = 0; x < width; x++)
@@ -106,7 +107,7 @@ public class ZXingScannerView extends BarcodeScannerView {
         Result rawResult = null;
         PlanarYUVLuminanceSource source = buildLuminanceSource(data, width, height);
 
-        if(source != null) {
+        if (source != null) {
             BinaryBitmap bitmap = new BinaryBitmap(new HybridBinarizer(source));
             try {
                 rawResult = mMultiFormatReader.decodeWithState(bitmap);
@@ -122,9 +123,25 @@ public class ZXingScannerView extends BarcodeScannerView {
         }
 
         if (rawResult != null) {
-            stopCamera();
-            if(mResultHandler != null) {
-                mResultHandler.handleResult(rawResult);
+            if (mResultHandler != null) {
+                if (mResultHandler.handleResult(rawResult)) {
+                    //No need to automatically stop the camera as it will (SHOULD!) be done on the onPause() events of activities or fragments using this view
+                    stopCamera();
+                } else {
+                    new Handler().postDelayed(new Runnable() {
+                        @Override
+                        public void run() {
+                            if (mMultiFormatReader != null
+                                    && camera != null
+                                    && getContext() != null
+                                    && !isCameraReleased()) {
+                                initMultiFormatReader();
+                                camera.setOneShotPreviewCallback(ZXingScannerView.this);
+                            }
+                        }
+                    }, 2000);
+
+                }
             }
         } else {
             camera.setOneShotPreviewCallback(this);
@@ -142,7 +159,7 @@ public class ZXingScannerView extends BarcodeScannerView {
         try {
             source = new PlanarYUVLuminanceSource(data, width, height, rect.left, rect.top,
                     rect.width(), rect.height(), false);
-        } catch(Exception e) {
+        } catch (Exception e) {
         }
 
         return source;
