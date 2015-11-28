@@ -176,10 +176,10 @@ public class QRCodeScannerActivity extends AppCompatActivity implements ZXingSca
     }
 
     private void initCamera() {
-        mScannerView.startCamera(-1);
         mScannerView.setAutoFocus(mAutoFocus);
         mScannerView.setFlash(mFlash);
         mScannerView.setResultHandler(this);
+        mScannerView.startCamera();
     }
 
     @Override

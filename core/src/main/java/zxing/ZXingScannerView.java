@@ -6,6 +6,7 @@ import android.graphics.Rect;
 import android.hardware.Camera;
 import android.os.Handler;
 import android.util.AttributeSet;
+import android.util.Log;
 
 import com.google.zxing.BarcodeFormat;
 import com.google.zxing.BinaryBitmap;
@@ -27,6 +28,9 @@ import me.dm7.barcodescanner.core.DisplayUtils;
 
 
 public class ZXingScannerView extends BarcodeScannerView {
+
+    public static final String TAG = "ZXingScannerView";
+
     public interface ResultHandler {
         boolean handleResult(Result rawResult);
     }
@@ -79,7 +83,7 @@ public class ZXingScannerView extends BarcodeScannerView {
     }
 
     private void initMultiFormatReader() {
-        Map<DecodeHintType, Object> hints = new EnumMap<DecodeHintType, Object>(DecodeHintType.class);
+        Map<DecodeHintType, Object> hints = new EnumMap<>(DecodeHintType.class);
         hints.put(DecodeHintType.POSSIBLE_FORMATS, getFormats());
         mMultiFormatReader = new MultiFormatReader();
         mMultiFormatReader.setHints(hints);
@@ -135,8 +139,13 @@ public class ZXingScannerView extends BarcodeScannerView {
                                     && camera != null
                                     && getContext() != null
                                     && !isCameraReleased()) {
-                                initMultiFormatReader();
-                                camera.setOneShotPreviewCallback(ZXingScannerView.this);
+                                try {
+                                    initMultiFormatReader();
+                                } catch (Exception e) {
+                                    Log.e(TAG, e.getMessage(), e);
+                                } finally {
+                                    camera.setOneShotPreviewCallback(ZXingScannerView.this);
+                                }
                             }
                         }
                     }, 2000);

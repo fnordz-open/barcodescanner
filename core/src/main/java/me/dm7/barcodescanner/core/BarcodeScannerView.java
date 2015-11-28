@@ -16,6 +16,8 @@ public abstract class BarcodeScannerView extends FrameLayout implements Camera.P
     private IViewFinder mViewFinderView;
     private Rect mFramingRectInPreview;
 
+    private int mViewFinderTopOffset = 0;
+
     public BarcodeScannerView(Context context) {
         super(context);
         setupLayout();
@@ -24,6 +26,13 @@ public abstract class BarcodeScannerView extends FrameLayout implements Camera.P
     public BarcodeScannerView(Context context, AttributeSet attributeSet) {
         super(context, attributeSet);
         setupLayout();
+    }
+
+    public final void setViewFinderTopOffset(int topOffset) {
+        mViewFinderTopOffset = topOffset;
+        if (mViewFinderView != null) {
+            mViewFinderView.setTopOffset(mViewFinderTopOffset);
+        }
     }
 
     public final void setupLayout() {
@@ -53,12 +62,10 @@ public abstract class BarcodeScannerView extends FrameLayout implements Camera.P
      * @param context {@link Context}
      * @return {@link android.view.View} that implements {@link ViewFinderView}
      */
-    protected ViewFinderView createViewFinderView(Context context) {
-        return new ViewFinderView(context);
-    }
-
     protected ViewFinderView createViewFinderView(Context context,Camera.Size optimalSize) {
-        return new ViewFinderView(context,optimalSize);
+        ViewFinderView v = new ViewFinderView(context,optimalSize);
+        v.setTopOffset(mViewFinderTopOffset);
+        return v;
     }
 
     public void startCamera(int cameraId) {

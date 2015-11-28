@@ -10,12 +10,12 @@ import android.hardware.Camera;
 import android.util.AttributeSet;
 import android.view.View;
 
-import java.util.List;
-
 public class ViewFinderView extends View implements IViewFinder {
     private static final String TAG = "ViewFinderView";
 
     private Rect mFramingRect;
+
+    private int mTopOffset = 0;
 
     private static final int MIN_FRAME_WIDTH = 240;
     private static final int MIN_FRAME_HEIGHT = 240;
@@ -115,6 +115,16 @@ public class ViewFinderView extends View implements IViewFinder {
     }
 
     @Override
+    public void setTopOffset(int margin) {
+        mTopOffset = margin;
+    }
+
+    @Override
+    public int getTopOffset() {
+        return mTopOffset;
+    }
+
+    @Override
     public void onDraw(Canvas canvas) {
         if (mFramingRect == null) {
             return;
@@ -186,7 +196,7 @@ public class ViewFinderView extends View implements IViewFinder {
     }
 
     public synchronized void updateFramingRect() {
-        Point viewResolution = new Point(getWidth(), getHeight());
+        Point viewResolution = new Point(getWidth(), getHeight() - mTopOffset);
         int width;
         int height;
         int orientation = DisplayUtils.getScreenOrientation(getContext());
@@ -200,7 +210,7 @@ public class ViewFinderView extends View implements IViewFinder {
         }
 
         int leftOffset = (viewResolution.x - width) / 2;
-        int topOffset = (viewResolution.y - height) / 2;
+        int topOffset = mTopOffset + (viewResolution.y - height) / 2;
         mFramingRect = new Rect(leftOffset, topOffset, leftOffset + width, topOffset + height);
     }
 

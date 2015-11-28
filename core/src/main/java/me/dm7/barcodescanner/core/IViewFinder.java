@@ -37,4 +37,8 @@ public interface IViewFinder {
      * @return height of a view
      */
     int getHeight();
+
+    void setTopOffset(int margin);
+
+    int getTopOffset();
 }
