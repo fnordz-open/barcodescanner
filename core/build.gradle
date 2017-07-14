@@ -11,8 +11,7 @@ ext {
 dependencies {
     compile supportLibraryDependency
     compile "com.android.support:appcompat-v7:${supportLibVersion}"
-
-    compile 'com.google.zxing:core:3.2.0'
+    compile 'com.google.zxing:core:3.3.0'
 }
 
 android {

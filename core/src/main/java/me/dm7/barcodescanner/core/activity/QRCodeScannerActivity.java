@@ -52,7 +52,7 @@ public class QRCodeScannerActivity extends AppCompatActivity implements ZXingSca
     private int cameraId = -1;
 
     public static final int RESULT_GET_MESSAGE = 1;
-    public static final int RESULT_SKIP_QRCODE = 2;
+    public static final int RESULT_SKIP_QR_CODE = 2;
     public static final int RESULT_PERMISSION_DENIED = 3;
 
     private boolean isPermissionRequested = false;
@@ -85,10 +85,8 @@ public class QRCodeScannerActivity extends AppCompatActivity implements ZXingSca
 
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
-        // Handle presses on the action bar items
-
         if (item.getItemId() == R.id.fora_de_sala) {
-            setResult(RESULT_SKIP_QRCODE);
+            setResult(RESULT_SKIP_QR_CODE);
             finish();
             return true;
         } else if (item.getItemId() == android.R.id.home) {
@@ -127,6 +125,8 @@ public class QRCodeScannerActivity extends AppCompatActivity implements ZXingSca
         setContentView(R.layout.activity_qrcode_preview);
 
         toolbar = (Toolbar) findViewById(R.id.toolbar);
+        // mutate() evita que a AppBar fique translúcida mesmo após a destruição da Activity.
+        // https://stackoverflow.com/questions/30494161/android-toolbar-becomes-translucent-when-navigating-back
         toolbar.getBackground().mutate().setAlpha(0);
 
         setSupportActionBar(toolbar);
@@ -181,7 +181,6 @@ public class QRCodeScannerActivity extends AppCompatActivity implements ZXingSca
 
     @Override
     public boolean handleResult(Result rawResult) {
-
         Intent i = new Intent();
         i.setData(Uri.parse(rawResult.getText()));
         i.putExtra(EXTRA_RAW_TEXT, rawResult.getText());
@@ -193,6 +192,7 @@ public class QRCodeScannerActivity extends AppCompatActivity implements ZXingSca
     }
 
     public void setupFormats() {
+
         List<BarcodeFormat> formats = new ArrayList<>();
 
         if (mSelectedIndices == null || mSelectedIndices.isEmpty()) {
